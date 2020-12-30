@@ -117,14 +117,16 @@ class TextKiwoom(QAxWidget):
             self._received = True
         if user_define_name == "수익률요청":
             data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
-            for i in range(data_length + 1):
+            for i in range(data_length):
                 code = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목코드")
-                # name = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목명")
+                name = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목명")
                 amount = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "보유수량")
-                # price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "매입금액")
-                cur_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
+                price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "매입금액")
+                cur_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "평가금액")
+                profit_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "손익금액")
                 percent = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "손익율")
-                self._received_data.append([code, cur_price, percent, amount])#name, amount, price, cur_price, percent])
+                sell_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
+                self._received_data.append([code, name, amount, price, cur_price, profit_price, percent, sell_price])
             self._received = True
         if user_define_name == "주식분봉차트조회요청":
             data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
@@ -155,26 +157,24 @@ class TextKiwoom(QAxWidget):
         # print(account_num)
         return str(account_num).replace(";", "")
 
-    def get_highest_trade_amount_jusik(self, minute=30, is_kospi=False, order_by_percent=True):
+    def get_highest_trade_amount_jusik(self, minute="15", market="001", request_by_amount="1"):
         """
         거래량 급등 종목들 조회
         :param minute: 30분을 기본으로 함 (이 함수의 호출이 9시 30~40분에 이루어진다 가정)
-        :param is_kospi: 코스피 주식을 조회할 것인지 여부 (False인 경우 코스닥 주식)
+        :param is_kospi: 코스피 주식을 조회할 것인지 여부 (str))
         :param order_by_percent: 퍼센트로 요청할것인지, 거래량으로 요청할것인지
         :return: 해당 종목들의 코드, 이름, 현재가, 거래 급증량, 거래 급증퍼센트
         """
-        market = "101" if is_kospi is False else "001"
-        order = "2" if order_by_percent is True else "1"
 
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시장구분", market)
-        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "정렬구분", order)
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "정렬구분", request_by_amount)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시간구분", "1")
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "거래량구분", "10")  # 만 주 이상만
-        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시간", str(minute))
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시간", minute)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "종목조건", "1")  # 관리종목 제외하고 불러옴
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "가격구분", "0")
 
-        print("tran을 서버로 보냅니다.")
+        # print("tran을 서버로 보냅니다.")
 
         result = self._send_tran("거래량급증요청", self.TRAN_TRADE_AMOUNT, False, "0002")
         result.sort(key=lambda x: x[3])
@@ -204,7 +204,7 @@ class TextKiwoom(QAxWidget):
                                    int(order_type),                 # 주문유형
                                    code,                            # 종목코드    
                                    int(amount),                     # 주문수량
-                                   int(price),                      # 주문가격
+                                   price if is_jijung else "",                      # 주문가격
                                    jijung,                          # 거래구분
                                    original_order[int(order_type)]] # 원주문번호
         )
@@ -246,8 +246,17 @@ class TextKiwoom(QAxWidget):
 
         # print("set input value complete, will proceed")
         result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False, "0004")
-        for data in result:
-            data[1] = abs(int(data[1]))
+        # print(result)
+        for i in range(len(result)):
+            result[i][0] = result[i][0].replace(" ", "")[1:]        # 종목코드
+            result[i][1] = result[i][1].replace(" ", "")            # 종목이름
+            result[i][2] = str(int(result[i][2]))                        # 보유량
+            result[i][3] = str(int(result[i][3]))                        # 매입금액
+            result[i][4] = str(int(result[i][4]))                        # 평가금액
+            result[i][5] = str(int(result[i][5]))                        # 손익금액
+            result[i][6] = str(float(result[i][6]))                      # 수익률
+            result[i][7] = str(int(result[i][7]))                   # 현재가
+        # print(result)
         return result
         
 
@@ -277,6 +286,5 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    print(test.trade_jusik("1", "057030", "1", "9000"))
-    print(test.get_balance())
+    test.get_profit()
     app.exec_()

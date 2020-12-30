@@ -58,7 +58,7 @@ class QueGetter:
             result = self._kiwoom.get_balance()
             # print("Successfully processed in _kiwoom_interact", balance)
         elif func_value[0] == "거래량급증요청":
-            result = self._kiwoom.get_highest_trade_amount_jusik()
+            result = self._kiwoom.get_highest_trade_amount_jusik(func_value[1], func_value[2], func_value[3])
         elif func_value[0] == "주식구매":
             # self, order_type, code, amount, price, is_jijung = False):
             result = self._kiwoom.trade_jusik("1", func_value[1], func_value[2], func_value[3])
@@ -69,7 +69,7 @@ class QueGetter:
         else:
             print("아직 구현되지 않은 기능입니다 : ", func_value[0])
             return
-        print("Process complete")
+        # print("Process complete")
         return else_func.result_to_byte(func_value[0], result)
 
     def receive_data(self):
@@ -79,10 +79,11 @@ class QueGetter:
             raw_data = channel.basic_get(queue=self._recv_queue, auto_ack=True) # 3번째꺼가 원하고자 하는 String을 가져와서 처리를 시작한다.
             if raw_data[2] is not None:
                 data = raw_data[2].decode().split("|")
-                print("Raw data : ", data)
+                # print("Raw data : ", data)
                 # print("middle data : ", data)
+                print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1])
                 result = data[0].encode() + b'|' + self._kiwoom_interact(data[1])
-                print("Final Result : ", result)
+                # print("Final Result : ", result)
                 channel.basic_publish(exchange='', routing_key=self._send_queue, body=result)
                 # channel.basic_get(queue=self._recv_queue, auto_ack=True)  # 작업을 끝마친 후에서야 큐에서 작업을 지운다.
             time.sleep(0.1)

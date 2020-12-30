@@ -19,16 +19,14 @@ def result_to_byte(result_name, kiwoom_result):
     elif result_name == "주식구매" or result_name == "주식판매":
         return int_to_byte(kiwoom_result)
     elif result_name == "수익률요청":
-        print(kiwoom_result)
+        # print(kiwoom_result)
         result = b''
+
         for i in range(len(kiwoom_result)):
-            result += string_to_byte(kiwoom_result[i][0])
-            result += b','
-            result += int_to_byte(kiwoom_result[i][1])
-            result += b','
-            result += string_to_byte(kiwoom_result[i][2])
-            result += b','
-            result += string_to_byte(kiwoom_result[i][3])
+            for j in range(7):
+                result += string_to_byte(kiwoom_result[i][j])
+                result += b','
+            result += string_to_byte(kiwoom_result[i][7])
             result += b'/'
 
         return result
