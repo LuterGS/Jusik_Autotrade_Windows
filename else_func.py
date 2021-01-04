@@ -30,6 +30,9 @@ def result_to_byte(result_name, kiwoom_result):
             result += b'/'
 
         return result
+    elif result_name == "프로그램재시작":
+        return b'RESTART'
+
 
 
 def int_to_byte(input_):

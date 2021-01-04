@@ -1,6 +1,7 @@
 import os
 import time
 import datetime
+from multiprocessing import Process
 import pika
 
 import kiwoom_main
@@ -18,6 +19,15 @@ def GET_MQ_VALUE():
     return return_val
 
 
+def start_program():
+    import sys
+    from PyQt5.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    main_program = QueGetter()
+    sleep_time = main_program.receive_data()
+    time.sleep(sleep_time)
+
+
 class QueGetter:
     def __init__(self):
         get_mq_val = GET_MQ_VALUE()
@@ -32,6 +42,9 @@ class QueGetter:
         # 3.6초 시간 조정
         self._time1 = datetime.datetime.now()
         self._time2 = datetime.datetime.now()
+
+        # 종료시간 저장
+        self._end_time = 0
 
     def _timechecker(self):
         # 3.6초 시간 이상이면 통과, 아니면 해당 시간만큼 sleep후 진행
@@ -52,6 +65,8 @@ class QueGetter:
         self._timechecker()
 
         # input이 여러개일 수 있으니 다듬어줌
+        # 여기에도 break 요청이 와야한다고 생각함.
+        # 즉, 점검시간에는 일부러 접속을 끊고, 이후에 다시 연결하도록 하는 무언가가 필요함.
         func_value = func_value.split(",")
         print(func_value)
         if func_value[0] == "잔액요청":
@@ -67,6 +82,9 @@ class QueGetter:
             result = self._kiwoom.trade_jusik("2", func_value[1], func_value[2], func_value[3])
         elif func_value[0] == "수익률요청":
             result = self._kiwoom.get_profit()
+        elif func_value[0] == "프로그램재시작":        # 시간만큼 잠드는 응답 True로 Return
+            result = None
+            self._end_time = int(func_value[1])
         else:
             print("아직 구현되지 않은 기능입니다 : ", func_value[0])
             return
@@ -83,19 +101,23 @@ class QueGetter:
                 # print("Raw data : ", data)
                 # print("middle data : ", data)
                 print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1])
-                result = data[0].encode() + b'|' + self._kiwoom_interact(data[1])
+                data_result = self._kiwoom_interact(data[1])
+                result = data[0].encode() + b'|' + data_result
                 # print("Final Result : ", result)
                 channel.basic_publish(exchange='', routing_key=self._send_queue, body=result)
                 # channel.basic_get(queue=self._recv_queue, auto_ack=True)  # 작업을 끝마친 후에서야 큐에서 작업을 지운다.
+                if self._end_time != 0:
+                    return self._end_time
+
+
+
             time.sleep(0.1)
+
+            # 여기에 한시간마다
 
 
 if __name__ == "__main__":
-    import sys
-    from PyQt5.QtWidgets import *
-    from PyQt5.QtGui import *
-    from PyQt5.QAxContainer import *
-    app = QApplication(sys.argv)
-    test = QueGetter()
-    test.receive_data()
-    app.exec_()
+    while True:
+        process1 = Process(target=start_program, args=())
+        process1.start()
+        process1.join()
