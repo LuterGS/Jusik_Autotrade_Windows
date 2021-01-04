@@ -157,7 +157,7 @@ class TextKiwoom(QAxWidget):
         # print(account_num)
         return str(account_num).replace(";", "")
 
-    def get_highest_trade_amount_jusik(self, minute="15", market="001", request_by_amount="1"):
+    def get_highest_trade_amount_jusik(self, minute="15", market="101", request_by_amount="1"):
         """
         거래량 급등 종목들 조회
         :param minute: 30분을 기본으로 함 (이 함수의 호출이 9시 30~40분에 이루어진다 가정)

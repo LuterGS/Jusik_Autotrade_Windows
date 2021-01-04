@@ -53,6 +53,7 @@ class QueGetter:
 
         # input이 여러개일 수 있으니 다듬어줌
         func_value = func_value.split(",")
+        print(func_value)
         if func_value[0] == "잔액요청":
             # print("get acc_num complete, acc_num : ", acc_num)
             result = self._kiwoom.get_balance()
