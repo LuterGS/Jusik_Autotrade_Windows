@@ -68,7 +68,7 @@ class QueGetter:
         # 여기에도 break 요청이 와야한다고 생각함.
         # 즉, 점검시간에는 일부러 접속을 끊고, 이후에 다시 연결하도록 하는 무언가가 필요함.
         func_value = func_value.split(",")
-        print(func_value)
+        # print(func_value)
         if func_value[0] == "잔액요청":
             # print("get acc_num complete, acc_num : ", acc_num)
             result = self._kiwoom.get_balance()
@@ -105,6 +105,7 @@ class QueGetter:
                 result = data[0].encode() + b'|' + data_result
                 # print("Final Result : ", result)
                 channel.basic_publish(exchange='', routing_key=self._send_queue, body=result)
+                # print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1], "            완료")
                 # channel.basic_get(queue=self._recv_queue, auto_ack=True)  # 작업을 끝마친 후에서야 큐에서 작업을 지운다.
                 if self._end_time != 0:
                     return self._end_time

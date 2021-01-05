@@ -1,7 +1,7 @@
 import sys
 import os
 import datetime
-from PyQt5.QtCore import QEventLoop
+from PyQt5.QtCore import QEventLoop, QTimer
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QAxContainer import *
@@ -27,11 +27,9 @@ class TextKiwoom(QAxWidget):
     TRAN_GETMINDATA = "opt10080"
     TRAN_TRADE_AMOUNT = "OPT10023"
 
-    # 화면번호 관련 (user-setted)
-    # 0001 : 계좌잔고 조회
-    # 0002 : 거래량급증주식 조회
-    # 0010 ~ 0020 : 주식거래
-    # 0030 ~ 0060 : 수익률조회
+    # 화면번호 관련
+    # 하나로 고정하면 안된다고 한다. 그러니, 함수를 호출해서 1~200 사이의 값을 순회하도록 하자.
+    # 이유 : 특정 요청에 대해 하나로 화면번호를 고정하면 오류가 날 수 있음
 
     def __init__(self):
         super().__init__()
@@ -41,8 +39,8 @@ class TextKiwoom(QAxWidget):
         self.OnEventConnect.connect(self._login_handler)
         self.OnReceiveTrData.connect(self._receive_tran)
         self.OnReceiveMsg.connect(self._receive_msg)
-        self.OnReceiveRealData.connect(self._receive_realdata)
-        self.OnReceiveChejanData.connect(self._receive_chejan)
+        # self.OnReceiveRealData.connect(self._receive_realdata)
+        # self.OnReceiveChejanData.connect(self._receive_chejan)
         self._login()
         
         # set default event handler
@@ -56,8 +54,7 @@ class TextKiwoom(QAxWidget):
         self._account_num = self._get_account_num()
 
         # 화면번호 리스트
-        self._trade_screen_no = 10
-        self._profit_screen_no = 30
+        self._screen_no = 1
 
     def _login(self):
         self.dynamicCall(self.FUNC_LOGIN)
@@ -73,7 +70,7 @@ class TextKiwoom(QAxWidget):
             exit(1)
         self.login_event_loop.exit()
 
-    def _send_tran(self, user_define_name, trans_name, is_continue=False, screen_no="0001"):
+    def _send_tran(self, user_define_name, trans_name, is_continue=False):
         """
         명세의 commRqData와, 그 요청한 데이터를 받는 함수
         :param user_define_name: 사용자가 지정한 요청의 이름
@@ -83,10 +80,15 @@ class TextKiwoom(QAxWidget):
         :return: commRqData로 요청한 TR의 값
         """
         continue_val = 0 if not is_continue else 2
+        screen_no, self._screen_no = else_func.change_screen_no(self._screen_no)
         # print(user_define_name, trans_name, continue_val, screen_no)
         self.dynamicCall(self.FUNC_REQUEST_COMM_DATA, user_define_name, trans_name, continue_val, screen_no)
         # print("Request complete, now proceed")
         self._receive_loop = QEventLoop()
+
+        # 여기서 Timeout을 줌으로써, 요청이 block되는 것을 막는다. - 3초 기다린다.
+        QTimer.singleShot(3000, self._receive_loop.exit)
+
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
         data = self._received_data
         self._received_data = []
@@ -95,11 +97,13 @@ class TextKiwoom(QAxWidget):
 
     def _receive_realdata(self, code, type, data):
         # OnReceiveRealData() 의 Python 구현형
-        print(code, type, data)
+        # print(code, type, data)
+        pass
 
     def _receive_chejan(self, gubun, item_len, data_list):
         # OnReceiveChejanData() 의 Python 구현형
-        print(gubun, item_len, data_list)
+        # print(gubun, item_len, data_list)
+        pass
 
     def _receive_msg(self, screen_no, user_define_name, trans_name, server_msg):
         # 이게 대부분 _receive_tran보다 빨리 온다고 가정한다.
@@ -130,6 +134,7 @@ class TextKiwoom(QAxWidget):
             self._received_data.append([user_define_name, account_name, balance])
             self._received = True
         if user_define_name == "수익률요청":
+            # print("in complete")
             data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
             for i in range(data_length):
                 code = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목코드")
@@ -142,6 +147,7 @@ class TextKiwoom(QAxWidget):
                 sell_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
                 self._received_data.append([code, name, amount, price, cur_price, profit_price, percent, sell_price])
             self._received = True
+            # print("out complete")
         if user_define_name == "주식분봉차트조회요청":
             data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
             for i in range(data_length):
@@ -190,11 +196,8 @@ class TextKiwoom(QAxWidget):
 
         # print("tran을 서버로 보냅니다.")
 
-        result = self._send_tran("거래량급증요청", self.TRAN_TRADE_AMOUNT, False, "0002")
-        result.sort(key=lambda x: x[3])
-        result.reverse()
-        result = result[:50]
-        return result #, self._get_receive_msg()
+        result = self._send_tran("거래량급증요청", self.TRAN_TRADE_AMOUNT, False)
+        return else_func.raw_result_to_result("거래량급증요청", result)
 
     def trade_jusik(self, order_type, code, amount, price, is_jijung=False):
         """
@@ -210,7 +213,7 @@ class TextKiwoom(QAxWidget):
 
         original_order = ["Error", "", "", "1", "2", "1", "2"]
         jijung = "00" if is_jijung else "03"
-        screen_no, self._trade_screen_no = else_func.change_screen_no(self._trade_screen_no)
+        screen_no, self._screen_no = else_func.change_screen_no(self._screen_no)
 
         result = self.dynamicCall(self.FUNC_TRADE_JUSIK,            # 주식거래 함수 SendOrder()
                                   ["주식거래",                        # 사용자 구분명
@@ -225,7 +228,8 @@ class TextKiwoom(QAxWidget):
         )
         
         #OnReceiveChejanData 에 체결결과가 나오니 그거 톧로 해볼것
-        return result #, self._get_receive_msg()
+        print(result)
+        return "1" #, self._get_receive_msg()
 
     def get_balance(self):
         """
@@ -241,11 +245,11 @@ class TextKiwoom(QAxWidget):
 
         # print("set input value complete, will proceed")
 
-        result = self._send_tran("계좌평가현황요청", self.TRAN_SHOWBALANCE, False, "0001")
+        result = self._send_tran("계좌평가현황요청", self.TRAN_SHOWBALANCE, False)
         # print(result)
         # print("result :", result)
         # 여기서 에러가 날 경우 (비밀번호 확인 관련) -> 위젯에서 계좌비밀번호 저장 눌러서 저장할 것
-        return result[0][2] #, self._get_receive_msg()
+        return else_func.raw_result_to_result("계좌평가현황요청", result)
 
 
     def get_profit(self):
@@ -260,21 +264,9 @@ class TextKiwoom(QAxWidget):
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "비밀번호입력매체구분", "00")
 
         # print("set input value complete, will proceed")
-        # 이걸 계속 조회하게 될텐데, 화면번호가 동일하면 주문이 꼬일 수도 있다고 한다. 즉, 주기적으로 화면번호를 변경해줘야 한다.
-        screen_no, self._profit_screen_no = else_func.change_screen_no(self._profit_screen_no)
-        result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False, screen_no)
+        result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False)
         # print(result)
-        for i in range(len(result)):
-            result[i][0] = result[i][0].replace(" ", "")[1:]        # 종목코드
-            result[i][1] = result[i][1].replace(" ", "")            # 종목이름
-            result[i][2] = str(int(result[i][2]))                        # 보유량
-            result[i][3] = str(int(result[i][3]))                        # 매입금액
-            result[i][4] = str(int(result[i][4]))                        # 평가금액
-            result[i][5] = str(int(result[i][5]))                        # 손익금액
-            result[i][6] = str(float(result[i][6]))                      # 수익률
-            result[i][7] = str(int(result[i][7]))                   # 현재가
-        # print(result)
-        return result
+        return else_func.raw_result_to_result("수익률요청", result)
         
 
 

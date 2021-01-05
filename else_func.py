@@ -2,25 +2,52 @@
 # 주식거래 화면번호 : 0010 ~ 0020
 # 수익률조회 화면번호 : 0030 ~ 0050
 def change_screen_no(cur_num):      # int로 넘어온다고 가정
-    if 10 <= cur_num < 20:
+    if 1 <= cur_num < 200:
         cur_num += 1
-    if cur_num == 20:
-        cur_num = 10
-    if 30 <= cur_num < 50:
-        cur_num += 1
-    if cur_num == 50:
-        cur_num = 30
-        return str(10000 + cur_num)[1:], cur_num
+    if cur_num == 200:
+        cur_num = 1
+    return str(10000 + cur_num)[1:], cur_num
+
+
+def raw_result_to_result(result_name, result):
+    if result == []:
+        print("\bIS FAILED")
+        return ""
+
+    if result_name == "거래량급증요청":
+        result.sort(key=lambda x: x[3])
+        result.reverse()
+        result = result[:50]
+        return result
+    elif result_name == "계좌평가현황요청":
+        return result[0][2]
+    elif result_name == "수익률요청":
+        for i in range(len(result)):
+            result[i][0] = result[i][0].replace(" ", "")[1:]        # 종목코드
+            result[i][1] = result[i][1].replace(" ", "")            # 종목이름
+            result[i][2] = str(int(result[i][2]))                        # 보유량
+            result[i][3] = str(int(result[i][3]))                        # 매입금액
+            result[i][4] = str(int(result[i][4]))                        # 평가금액
+            result[i][5] = str(int(result[i][5]))                        # 손익금액
+            result[i][6] = str(float(result[i][6]))                      # 수익률
+            result[i][7] = str(int(result[i][7]))                   # 현재가
+        return result
+
+
+
 
 
 def result_to_byte(result_name, kiwoom_result):
+    if kiwoom_result == "":
+        return b'FAIL'
+
     if result_name == "잔액요청":
         return string_to_byte(kiwoom_result)
     elif result_name == "거래량급증요청":
         # 여기에 진입한다는 소리는, 무조건 list는 50개, 각 원소는 4개의 요소를 가진 list라는 소리다.
         # 즉, 무조건 for문에서 상수로 선언해서 접근한다.
         result = b''
-        for i in range(50):
+        for i in range(len(kiwoom_result)):
             result += string_to_byte(kiwoom_result[i][0])
             result += b','
             result += string_to_byte(kiwoom_result[i][1])
