@@ -1,4 +1,18 @@
 
+# 주식거래 화면번호 : 0010 ~ 0020
+# 수익률조회 화면번호 : 0030 ~ 0050
+def change_screen_no(cur_num):      # int로 넘어온다고 가정
+    if 10 <= cur_num < 20:
+        cur_num += 1
+    if cur_num == 20:
+        cur_num = 10
+    if 30 <= cur_num < 50:
+        cur_num += 1
+    if cur_num == 50:
+        cur_num = 30
+        return str(10000 + cur_num)[1:], cur_num
+
+
 def result_to_byte(result_name, kiwoom_result):
     if result_name == "잔액요청":
         return string_to_byte(kiwoom_result)

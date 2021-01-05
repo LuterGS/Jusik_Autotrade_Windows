@@ -30,8 +30,8 @@ class TextKiwoom(QAxWidget):
     # 화면번호 관련 (user-setted)
     # 0001 : 계좌잔고 조회
     # 0002 : 거래량급증주식 조회
-    # 0003 : 주식거래
-    # 0004 : 수익률조회
+    # 0010 ~ 0020 : 주식거래
+    # 0030 ~ 0060 : 수익률조회
 
     def __init__(self):
         super().__init__()
@@ -41,6 +41,8 @@ class TextKiwoom(QAxWidget):
         self.OnEventConnect.connect(self._login_handler)
         self.OnReceiveTrData.connect(self._receive_tran)
         self.OnReceiveMsg.connect(self._receive_msg)
+        self.OnReceiveRealData.connect(self._receive_realdata)
+        self.OnReceiveChejanData.connect(self._receive_chejan)
         self._login()
         
         # set default event handler
@@ -52,6 +54,10 @@ class TextKiwoom(QAxWidget):
 
         # set default info
         self._account_num = self._get_account_num()
+
+        # 화면번호 리스트
+        self._trade_screen_no = 10
+        self._profit_screen_no = 30
 
     def _login(self):
         self.dynamicCall(self.FUNC_LOGIN)
@@ -86,6 +92,14 @@ class TextKiwoom(QAxWidget):
         self._received_data = []
         self._received = False
         return data
+
+    def _receive_realdata(self, code, type, data):
+        # OnReceiveRealData() 의 Python 구현형
+        print(code, type, data)
+
+    def _receive_chejan(self, gubun, item_len, data_list):
+        # OnReceiveChejanData() 의 Python 구현형
+        print(gubun, item_len, data_list)
 
     def _receive_msg(self, screen_no, user_define_name, trans_name, server_msg):
         # 이게 대부분 _receive_tran보다 빨리 온다고 가정한다.
@@ -196,10 +210,11 @@ class TextKiwoom(QAxWidget):
 
         original_order = ["Error", "", "", "1", "2", "1", "2"]
         jijung = "00" if is_jijung else "03"
+        screen_no, self._trade_screen_no = else_func.change_screen_no(self._trade_screen_no)
 
         result = self.dynamicCall(self.FUNC_TRADE_JUSIK,            # 주식거래 함수 SendOrder()
                                   ["주식거래",                        # 사용자 구분명
-                                   "0003",                          # 화면번호 
+                                   screen_no,                          # 화면번호
                                    self._account_num,               # 계좌번호 10자리
                                    int(order_type),                 # 주문유형
                                    code,                            # 종목코드    
@@ -245,7 +260,9 @@ class TextKiwoom(QAxWidget):
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "비밀번호입력매체구분", "00")
 
         # print("set input value complete, will proceed")
-        result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False, "0004")
+        # 이걸 계속 조회하게 될텐데, 화면번호가 동일하면 주문이 꼬일 수도 있다고 한다. 즉, 주기적으로 화면번호를 변경해줘야 한다.
+        screen_no, self._profit_screen_no = else_func.change_screen_no(self._profit_screen_no)
+        result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False, screen_no)
         # print(result)
         for i in range(len(result)):
             result[i][0] = result[i][0].replace(" ", "")[1:]        # 종목코드
@@ -286,5 +303,6 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    test.get_profit()
+    result = test.get_profit()
+    print(result)
     app.exec_()
