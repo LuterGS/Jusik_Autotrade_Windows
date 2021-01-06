@@ -11,7 +11,7 @@ def change_screen_no(cur_num):      # int로 넘어온다고 가정
 
 def raw_result_to_result(result_name, result):
     if result == []:
-        print("\bIS FAILED")
+        print("\b  IS FAILED")
         return ""
 
     if result_name == "거래량급증요청":
@@ -22,7 +22,10 @@ def raw_result_to_result(result_name, result):
     elif result_name == "계좌평가현황요청":
         return result[0][2]
     elif result_name == "수익률요청":
-        for i in range(len(result)):
+        # print("whole : ", result)
+        result[0] = str(result[0])
+        for i in range(1, len(result)):
+            # print("test : ", result[i])
             result[i][0] = result[i][0].replace(" ", "")[1:]        # 종목코드
             result[i][1] = result[i][1].replace(" ", "")            # 종목이름
             result[i][2] = str(int(result[i][2]))                        # 보유량
@@ -60,10 +63,9 @@ def result_to_byte(result_name, kiwoom_result):
     elif result_name == "주식구매" or result_name == "주식판매":
         return int_to_byte(kiwoom_result)
     elif result_name == "수익률요청":
-        # print(kiwoom_result)
         result = b''
-
-        for i in range(len(kiwoom_result)):
+        result += string_to_byte(kiwoom_result[0]) + b'/'
+        for i in range(1, len(kiwoom_result)):
             for j in range(7):
                 result += string_to_byte(kiwoom_result[i][j])
                 result += b','

@@ -87,13 +87,24 @@ class TextKiwoom(QAxWidget):
         self._receive_loop = QEventLoop()
 
         # 여기서 Timeout을 줌으로써, 요청이 block되는 것을 막는다. - 3초 기다린다.
-        QTimer.singleShot(3000, self._receive_loop.exit)
+        timer = QTimer()
+        timer.setSingleShot(True)
+        timer.singleShot(3000, self._loop_end)
 
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
         data = self._received_data
         self._received_data = []
         self._received = False
+
+        timer.setSingleShot(False)
+        timer.stop()
+
         return data
+
+    def _loop_end(self):
+        self._receive_loop.exit()
+        self._received_data = []
+        self._received = False
 
     def _receive_realdata(self, code, type, data):
         # OnReceiveRealData() 의 Python 구현형
@@ -136,6 +147,7 @@ class TextKiwoom(QAxWidget):
         if user_define_name == "수익률요청":
             # print("in complete")
             data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
+            self._received_data.append(data_length)
             for i in range(data_length):
                 code = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목코드")
                 name = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목명")
@@ -246,7 +258,7 @@ class TextKiwoom(QAxWidget):
         # print("set input value complete, will proceed")
 
         result = self._send_tran("계좌평가현황요청", self.TRAN_SHOWBALANCE, False)
-        # print(result)
+        print("final result is : ", result)
         # print("result :", result)
         # 여기서 에러가 날 경우 (비밀번호 확인 관련) -> 위젯에서 계좌비밀번호 저장 눌러서 저장할 것
         return else_func.raw_result_to_result("계좌평가현황요청", result)
@@ -265,8 +277,8 @@ class TextKiwoom(QAxWidget):
 
         # print("set input value complete, will proceed")
         result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False)
-        # print(result)
         return else_func.raw_result_to_result("수익률요청", result)
+        # print(result)
         
 
 
@@ -295,6 +307,5 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    result = test.get_profit()
-    print(result)
+    test.get_balance()
     app.exec_()

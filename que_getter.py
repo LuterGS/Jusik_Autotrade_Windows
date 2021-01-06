@@ -103,7 +103,7 @@ class QueGetter:
                 print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1])
                 data_result = self._kiwoom_interact(data[1])
                 result = data[0].encode() + b'|' + data_result
-                # print("Final Result : ", result)
+                print("Final Result : ", result)
                 channel.basic_publish(exchange='', routing_key=self._send_queue, body=result)
                 # print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1], "            완료")
                 # channel.basic_get(queue=self._recv_queue, auto_ack=True)  # 작업을 끝마친 후에서야 큐에서 작업을 지운다.
