@@ -42,13 +42,16 @@ class TextKiwoom(QAxWidget):
         # self.OnReceiveRealData.connect(self._receive_realdata)
         # self.OnReceiveChejanData.connect(self._receive_chejan)
         self._login()
-        
-        # set default event handler
 
         # set receiver
         self._received = False
         self._received_data = []
         # self._received_msg = "" -> 메시지를 보는 방법에 대해, Eventloop과 연계해서 다시 생각해보기
+
+        # set timeout timer
+        self._timer = QTimer()
+        self._timer.setInterval(5000)
+        self._timer.timeout.connect(self._loop_end)
 
         # set default info
         self._account_num = self._get_account_num()
@@ -85,26 +88,17 @@ class TextKiwoom(QAxWidget):
         self.dynamicCall(self.FUNC_REQUEST_COMM_DATA, user_define_name, trans_name, continue_val, screen_no)
         # print("Request complete, now proceed")
         self._receive_loop = QEventLoop()
-
-        # 여기서 Timeout을 줌으로써, 요청이 block되는 것을 막는다. - 3초 기다린다.
-        timer = QTimer()
-        timer.setSingleShot(True)
-        timer.singleShot(3000, self._loop_end)
-
+        self._timer.start()
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
         data = self._received_data
         self._received_data = []
         self._received = False
 
-        timer.setSingleShot(False)
-        timer.stop()
-
         return data
 
     def _loop_end(self):
         self._receive_loop.exit()
-        self._received_data = []
-        self._received = False
+        self._timer.stop()
 
     def _receive_realdata(self, code, type, data):
         # OnReceiveRealData() 의 Python 구현형
@@ -240,7 +234,7 @@ class TextKiwoom(QAxWidget):
         )
         
         #OnReceiveChejanData 에 체결결과가 나오니 그거 톧로 해볼것
-        print(result)
+        # print(result)
         return "1" #, self._get_receive_msg()
 
     def get_balance(self):

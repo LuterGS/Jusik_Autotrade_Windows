@@ -23,7 +23,9 @@ def raw_result_to_result(result_name, result):
         return result[0][2]
     elif result_name == "수익률요청":
         # print("whole : ", result)
+        #end_val = 1 if result[0] == 0 else result[0] + 1
         result[0] = str(result[0])
+        # print(end_val)
         for i in range(1, len(result)):
             # print("test : ", result[i])
             result[i][0] = result[i][0].replace(" ", "")[1:]        # 종목코드
@@ -34,7 +36,8 @@ def raw_result_to_result(result_name, result):
             result[i][5] = str(int(result[i][5]))                        # 손익금액
             result[i][6] = str(float(result[i][6]))                      # 수익률
             result[i][7] = str(int(result[i][7]))                   # 현재가
-        return result
+        # print(result)
+        return result[1:]
 
 
 
