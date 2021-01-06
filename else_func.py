@@ -1,4 +1,3 @@
-
 # 주식거래 화면번호 : 0010 ~ 0020
 # 수익률조회 화면번호 : 0030 ~ 0050
 def change_screen_no(cur_num):      # int로 넘어온다고 가정
@@ -49,6 +48,16 @@ def result_to_byte(result_name, kiwoom_result):
 
     if result_name == "잔액요청":
         return string_to_byte(kiwoom_result)
+    elif result_name == "주식분봉차트조회요청":
+        result = b''
+        for datas in kiwoom_result:
+            for i in range(0, len(datas)-1):
+                result += string_to_byte(datas[i])
+                result += b','
+            result += string_to_byte(datas[len(datas) - 1])
+            result += b'/'
+        return result
+
     elif result_name == "거래량급증요청":
         # 여기에 진입한다는 소리는, 무조건 list는 50개, 각 원소는 4개의 요소를 가진 list라는 소리다.
         # 즉, 무조건 for문에서 상수로 선언해서 접근한다.
@@ -87,3 +96,14 @@ def int_to_byte(input_):
 
 def string_to_byte(input_: str):
     return input_.encode()
+
+
+def list_printer(input_ :list):
+    for data in input_:
+        print(data)
+
+def remove_space(input_: list):
+    for datas in input_:
+        for data in datas:
+            data = data.replace("\t", "").replace(" ", "")
+    return input_

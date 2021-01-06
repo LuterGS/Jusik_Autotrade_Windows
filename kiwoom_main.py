@@ -50,7 +50,7 @@ class TextKiwoom(QAxWidget):
 
         # set timeout timer
         self._timer = QTimer()
-        self._timer.setInterval(5000)
+        self._timer.setInterval(10000)
         self._timer.timeout.connect(self._loop_end)
 
         # set default info
@@ -91,6 +91,7 @@ class TextKiwoom(QAxWidget):
         self._timer.start()
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
         data = self._received_data
+        # print(data)
         self._received_data = []
         self._received = False
 
@@ -99,6 +100,7 @@ class TextKiwoom(QAxWidget):
     def _loop_end(self):
         self._receive_loop.exit()
         self._timer.stop()
+        print("timer is called!")
 
     def _receive_realdata(self, code, type, data):
         # OnReceiveRealData() 의 Python 구현형
@@ -173,6 +175,26 @@ class TextKiwoom(QAxWidget):
                 result_list = [code.replace(" ", ""), name.replace(" ", ""), abs(int(price.replace(" ", ""))), abs(int(price.replace(" ", ""))) * abs(int(amount.replace(" ", "")))]
                 self._received_data.append(result_list)
             self._received = True
+        if user_define_name == "주식분봉차트조회요청":
+            data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
+            print("len : ", data_length)
+            for i in range(data_length):
+                v1 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "체결시간")
+                v2 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
+                v3 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "거래량")
+                v4 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "시가")
+                v5 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "고가")
+                v6 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "저가")
+                v7 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "수정주가구분").strip()
+                v8 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "수정비율").strip()
+                v9 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "대업종구분").strip()
+                v10 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "소업종구분").strip()
+                v11 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목정보").strip()
+                v12 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "수정주가이벤트").strip()
+                v13 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "전일종가").strip()
+                # print([v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13])
+                self._received_data.append([v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13])
+            self._received = True
         if user_define_name == "주식거래":
             # print("이게 인식이 되네")
             return
@@ -183,7 +205,7 @@ class TextKiwoom(QAxWidget):
         # print(account_num)
         return str(account_num).replace(";", "")
 
-    def get_highest_trade_amount_jusik(self, minute="15", market="101", request_by_amount="1"):
+    def get_highest_trade_amount_jusik(self, minute="15", market="101", request_by_amount="1", is_min="1"):
         """
         거래량 급등 종목들 조회
         :param minute: 30분을 기본으로 함 (이 함수의 호출이 9시 30~40분에 이루어진다 가정)
@@ -194,7 +216,7 @@ class TextKiwoom(QAxWidget):
 
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시장구분", market)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "정렬구분", request_by_amount)
-        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시간구분", "1")
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시간구분", is_min)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "거래량구분", "10")  # 만 주 이상만
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "시간", minute)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "종목조건", "1")  # 관리종목 제외하고 불러옴
@@ -273,33 +295,40 @@ class TextKiwoom(QAxWidget):
         result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False)
         return else_func.raw_result_to_result("수익률요청", result)
         # print(result)
-        
 
 
-    def get_kospi_data(self):
-        """
-        코스피 주식들을 가져와 종목코드_종목이름.txt로 저장
-        :return: 성공시 True
-        """
+    def get_highest_jusik_data(self, num=200):
+        pass
 
-    def get_min_jusik_data(self, ticker: str, save_folder=_FILEPATH + "\\data\\"):
+    def get_min_past_data(self, code, is_continue="0"):
         """
-        주식 분봉 데이터를 1년치 가져오는 함수. (Request당 900번, 하나당 1분이니 총 112번 요청)
-        :param ticker: 주식 종목코드
-        :param save_folder: 주식 데이터 저장 폴더
-        :return: 성공, 실패값 (bool)
+        요청한 주식 정보를 되돌려주는 함수
+        :param code: 종목코드 (6자리 str)
+        :param is_continue: 반복인지 (처음 요청시 0, 반복시 2)
+        :return: 해당 주식 종목값
         """
-        korean_name = self.dynamicCall(self.FUNC_GET_KOREAN_NAME, ticker)
-        # print(ticker + "_" + korean_name + ".txt 진행 중", end="")
-        save_file = open(save_folder + ticker + "_" + korean_name + ".txt", "w", encoding="utf8")
-        save_file.write("거래시간, 거래가격, 거래량\n")
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "종목코드", code)
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "틱범위", "1")
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "수정주가구분", "0")
+        cont = False if is_continue == "0" else True
 
-        self.dynamicCall(self.FUNC_SET_INPUT_VALUE)
+        result = self._send_tran("주식분봉차트조회요청", self.TRAN_GETMINDATA, cont)
+        return result
+
 
 
 # 함수 실험하는 공간
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    test.get_balance()
+    val = test.get_highest_trade_amount_jusik()
+    print(val)
+
+    jusik1 = test.get_min_past_data("036090", "0")
+    jusik2 = test.get_min_past_data("036090", "2")
+
+    jusik1 = else_func.result_to_byte("주식분봉차트조회요청", jusik1)
+    print(len(jusik1))
+    print(jusik1)
+
     app.exec_()

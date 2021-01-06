@@ -8,6 +8,7 @@ import kiwoom_main
 import else_func
 
 _PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
+_WAIT_TIME = 2
 
 
 def GET_MQ_VALUE():
@@ -53,10 +54,10 @@ class QueGetter:
         diff = self._time1 - self._time2
         elapsed_time = diff.seconds + (diff.microseconds/1000000)
 
-        if elapsed_time >= 3.6:
+        if elapsed_time >= _WAIT_TIME:
             pass
         else:
-            time.sleep(3.6 - elapsed_time)
+            time.sleep(_WAIT_TIME - elapsed_time)
             self._time1 = datetime.datetime.now()
 
     def _kiwoom_interact(self, func_value):
@@ -73,8 +74,10 @@ class QueGetter:
             # print("get acc_num complete, acc_num : ", acc_num)
             result = self._kiwoom.get_balance()
             # print("Successfully processed in _kiwoom_interact", balance)
+        elif func_value[0] == "주식분봉차트조회요청":
+            result = self._kiwoom.get_min_past_data(func_value[1], func_value[2])
         elif func_value[0] == "거래량급증요청":
-            result = self._kiwoom.get_highest_trade_amount_jusik(func_value[1], func_value[2], func_value[3])
+            result = self._kiwoom.get_highest_trade_amount_jusik(func_value[1], func_value[2], func_value[3], func_value[4])
         elif func_value[0] == "주식구매":
             # self, order_type, code, amount, price, is_jijung = False):
             result = self._kiwoom.trade_jusik("1", func_value[1], func_value[2], func_value[3])
@@ -109,12 +112,7 @@ class QueGetter:
                 # channel.basic_get(queue=self._recv_queue, auto_ack=True)  # 작업을 끝마친 후에서야 큐에서 작업을 지운다.
                 if self._end_time != 0:
                     return self._end_time
-
-
-
             time.sleep(0.1)
-
-            # 여기에 한시간마다
 
 
 if __name__ == "__main__":
