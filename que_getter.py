@@ -8,7 +8,7 @@ import kiwoom_main
 import else_func
 
 _PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
-_WAIT_TIME = 2
+_WAIT_TIME = 3.6
 
 
 def GET_MQ_VALUE():

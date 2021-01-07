@@ -321,14 +321,5 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    val = test.get_highest_trade_amount_jusik()
+    val = test.get_profit()
     print(val)
-
-    jusik1 = test.get_min_past_data("036090", "0")
-    jusik2 = test.get_min_past_data("036090", "2")
-
-    jusik1 = else_func.result_to_byte("주식분봉차트조회요청", jusik1)
-    print(len(jusik1))
-    print(jusik1)
-
-    app.exec_()
