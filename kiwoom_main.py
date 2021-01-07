@@ -90,6 +90,7 @@ class TextKiwoom(QAxWidget):
         self._receive_loop = QEventLoop()
         self._timer.start()
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
+        self._timer.stop()
         data = self._received_data
         # print(data)
         self._received_data = []
@@ -119,6 +120,9 @@ class TextKiwoom(QAxWidget):
         # _receive_tran을 요청하지 않고도 이게 반환될 때는 어떻게 처리해야 하는가?
         # self._received_msg = server_msg
         print(screen_no, user_define_name, trans_name, server_msg)
+        if user_define_name == "주식거래":      # 여기서 에러처리도 가능함
+            self._trade_jusik_loop.exit()
+            # print("reachd htere!")
 
     def _receive_tran(self, screen_no, user_define_name, trans_name, record_name, is_continue, u1, u2, u3, u4):
         """
@@ -254,6 +258,9 @@ class TextKiwoom(QAxWidget):
                                    jijung,                          # 거래구분
                                    original_order[int(order_type)]] # 원주문번호
         )
+        self._trade_jusik_loop = QEventLoop()
+        self._trade_jusik_loop.exec_()
+        # print("Now reached here")
         
         #OnReceiveChejanData 에 체결결과가 나오니 그거 톧로 해볼것
         # print(result)
@@ -274,7 +281,7 @@ class TextKiwoom(QAxWidget):
         # print("set input value complete, will proceed")
 
         result = self._send_tran("계좌평가현황요청", self.TRAN_SHOWBALANCE, False)
-        print("final result is : ", result)
+        # print("final result is : ", result)
         # print("result :", result)
         # 여기서 에러가 날 경우 (비밀번호 확인 관련) -> 위젯에서 계좌비밀번호 저장 눌러서 저장할 것
         return else_func.raw_result_to_result("계좌평가현황요청", result)
@@ -321,5 +328,6 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
+    print(else_func.result_to_byte("잔액요청", test.get_balance()))
     val = else_func.result_to_byte("수익률요청", test.get_profit())
     print(val)

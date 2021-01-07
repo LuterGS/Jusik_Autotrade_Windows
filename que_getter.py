@@ -91,7 +91,7 @@ class QueGetter:
         else:
             print("아직 구현되지 않은 기능입니다 : ", func_value[0])
             return
-        # print("Process complete")
+        # print("Process complete, value is ", result)
         return else_func.result_to_byte(func_value[0], result)
 
     def receive_data(self):
@@ -105,6 +105,7 @@ class QueGetter:
                 # print("middle data : ", data)
                 print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1])
                 data_result = self._kiwoom_interact(data[1])
+                # print("처리결과 : ", data_result)
                 result = data[0].encode() + b'|' + data_result
                 # print("Final Result : ", result)
                 channel.basic_publish(exchange='', routing_key=self._send_queue, body=result)
