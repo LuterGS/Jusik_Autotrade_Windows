@@ -321,5 +321,5 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    val = test.get_profit()
+    val = else_func.result_to_byte("수익률요청", test.get_profit())
     print(val)

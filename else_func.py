@@ -36,7 +36,7 @@ def raw_result_to_result(result_name, result):
             result[i][6] = str(float(result[i][6]))                      # 수익률
             result[i][7] = str(int(result[i][7]))                   # 현재가
         # print(result)
-        return result[1:]
+        return result
 
 
 
