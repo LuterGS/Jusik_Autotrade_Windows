@@ -18,10 +18,10 @@ def raw_result_to_result(result_name, result):
         result.reverse()
         result = result[:50]
         return result
-    elif result_name == "계좌평가현황요청":
-        return result[0][2]
+    elif result_name == "예수금상세현황요청":
+        return result[0]
     elif result_name == "수익률요청":
-        # print("whole : ", result)
+        print("whole : ", result)
         #end_val = 1 if result[0] == 0 else result[0] + 1
         result[0] = str(result[0])
         # print(end_val)

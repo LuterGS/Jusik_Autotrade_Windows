@@ -158,13 +158,24 @@ class TextKiwoom(QAxWidget):
         :return: 없음. self.received_data에 값을 넣어주는게 끝
         """
         # print(user_define_name, trans_name, is_continue)
-        if user_define_name == "계좌평가현황요청":
-            data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
-            # print("Now entered 계좌평가현황요청")
-            account_name = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "계좌명")
-            balance = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "예수금")
+        if user_define_name == "예수금상세현황요청":
+            v1 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "예수금")
+            # print("p")
+            v2 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "주식증거금현금")
+            # print("p")
+            v3 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "수익증권증거금현금")
+            # print("p")
+            v4 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "신용보증금현금")
+            # print("p")
+            v5 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "기타증거금")
+            # print("p")
+            v6 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "미수확보금")
+            # print("p")
+            v7 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "주문가능금액")
+
+            # balance = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "예수금")
             # print(account_name, balance)
-            self._received_data.append([user_define_name, account_name, balance])
+            self._received_data.append([v1, v2, v3, v4, v5, v6, v7])
             self._received = True
         if user_define_name == "수익률요청":
             # print("in complete")
@@ -300,16 +311,16 @@ class TextKiwoom(QAxWidget):
 
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "계좌번호", self._account_num)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "비밀번호", "")
-        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "상장폐지조회구분", "0")  # 상장폐지 조회 구분 포함시 "0", 아닐시 "1"
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "비밀번호입력매체구분", "00")
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "조회구분", "2")
 
         # print("set input value complete, will proceed")
 
-        result = self._send_tran("계좌평가현황요청", self.TRAN_SHOWBALANCE, False)
+        result = self._send_tran("예수금상세현황요청", self.TRAN_SHOWBALANCE, False)
         # print("final result is : ", result)
         # print("result :", result)
         # 여기서 에러가 날 경우 (비밀번호 확인 관련) -> 위젯에서 계좌비밀번호 저장 눌러서 저장할 것
-        return else_func.raw_result_to_result("계좌평가현황요청", result)
+        return else_func.raw_result_to_result("예수금상세현황요청", result)
 
 
     def get_profit(self):
@@ -353,6 +364,6 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    print(else_func.result_to_byte("잔액요청", test.get_balance()))
+    print("잔액요청", test.get_balance())
     val = else_func.result_to_byte("수익률요청", test.get_profit())
     print(val)

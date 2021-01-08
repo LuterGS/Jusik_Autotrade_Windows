@@ -103,7 +103,7 @@ class QueGetter:
                 data = raw_data[2].decode().split("|")
                 # print("Raw data : ", data)
                 # print("middle data : ", data)
-                print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1])
+                print("요청받은 pid : ", data[0], "  요청받은 항목 : ", data[1], "   요청시간 : ", str(datetime.datetime.now()))
                 data_result = self._kiwoom_interact(data[1])
                 # print("처리결과 : ", data_result)
                 result = data[0].encode() + b'|' + data_result
