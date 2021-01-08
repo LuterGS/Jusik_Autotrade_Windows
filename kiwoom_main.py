@@ -52,6 +52,9 @@ class TextKiwoom(QAxWidget):
         self._timer = QTimer()
         self._timer.setInterval(10000)
         self._timer.timeout.connect(self._loop_end)
+        self._trade_timer = QTimer()
+        self._trade_timer.setInterval(10000)
+        self._trade_timer.timeout.connect(self._trade_loop_end)
 
         # set default info
         self._account_num = self._get_account_num()
@@ -82,15 +85,29 @@ class TextKiwoom(QAxWidget):
         :param screen_no: 화면번호 (최대 200개까지, 0000~0999사이에 생성 가능)
         :return: commRqData로 요청한 TR의 값
         """
+        # 계속 값이 들어올 것인지를 조정
         continue_val = 0 if not is_continue else 2
+        
+        # 화면번호 변경
         screen_no, self._screen_no = else_func.change_screen_no(self._screen_no)
         # print(user_define_name, trans_name, continue_val, screen_no)
+        
+        # 함수 호출
         self.dynamicCall(self.FUNC_REQUEST_COMM_DATA, user_define_name, trans_name, continue_val, screen_no)
         # print("Request complete, now proceed")
+        
+        # 이벤트루프 설정 (signal wait과 비슷) 및 Timeout 설정
         self._receive_loop = QEventLoop()
         self._timer.start()
+        
+        # 이벤트루프 실행
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
+        
+        # 정상적으로 이벤트루프가 break되었을 때 Timer를 중지함
         self._timer.stop()
+        
+        # 이벤트루프가 깨진 이후 데이터를 받아옴
+        # 정상적으로 값을 받아왔을 때는 값이 들어있고, 아니면 값이 들어있지 않음
         data = self._received_data
         # print(data)
         self._received_data = []
@@ -102,6 +119,11 @@ class TextKiwoom(QAxWidget):
         self._receive_loop.exit()
         self._timer.stop()
         print("timer is called!")
+        
+    def _trade_loop_end(self):
+        self._trade_jusik_loop.exit()
+        self._trade_timer.stop()
+        print("trade timer is called!")
 
     def _receive_realdata(self, code, type, data):
         # OnReceiveRealData() 의 Python 구현형
@@ -258,13 +280,16 @@ class TextKiwoom(QAxWidget):
                                    jijung,                          # 거래구분
                                    original_order[int(order_type)]] # 원주문번호
         )
+        
+        # 이벤트 핸들러 설정 (sigwait과 비슷)
+        # timeout을 10초로 설정함.
         self._trade_jusik_loop = QEventLoop()
+        self._trade_timer.start()
         self._trade_jusik_loop.exec_()
+        self._trade_timer.stop()
         # print("Now reached here")
         
-        #OnReceiveChejanData 에 체결결과가 나오니 그거 톧로 해볼것
-        # print(result)
-        return "1" #, self._get_receive_msg()
+        return "1"
 
     def get_balance(self):
         """
