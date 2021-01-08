@@ -287,7 +287,7 @@ class TextKiwoom(QAxWidget):
         self._trade_timer.start()
         self._trade_jusik_loop.exec_()
         self._trade_timer.stop()
-        # print("Now reached here")
+        print("Now reached here, result : ", result)
         
         return "1"
 

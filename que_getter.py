@@ -62,8 +62,8 @@ class QueGetter:
 
     def _kiwoom_interact(self, func_value):
 
-        # 3.6초 제한시간 확인
-        self._timechecker()
+        # 프로그램의 구매/판매는 즉각적으로 이루어져야 하므로 linux 서버에서 sleep을 자의적으로 줌
+        # self._timechecker()
 
         # input이 여러개일 수 있으니 다듬어줌
         # 여기에도 break 요청이 와야한다고 생각함.
