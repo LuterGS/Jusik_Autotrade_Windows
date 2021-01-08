@@ -47,7 +47,7 @@ def result_to_byte(result_name, kiwoom_result):
         return b'FAIL'
 
     if result_name == "잔액요청":
-        return string_to_byte(kiwoom_result)
+        return string_to_byte(kiwoom_result[0])
     elif result_name == "주식분봉차트조회요청":
         result = b''
         for datas in kiwoom_result:
