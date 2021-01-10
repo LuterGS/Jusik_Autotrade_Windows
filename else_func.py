@@ -85,8 +85,8 @@ def result_to_byte(result_name, kiwoom_result):
             result += b'/'
 
         return result
-    elif result_name == "프로그램재시작":
-        return b'RESTART'
+    # elif result_name == "프로그램재시작":    구현되어있지만 que_getter.py에서 사용하지 않음
+    #     return b'RESTART'
 
 
 
