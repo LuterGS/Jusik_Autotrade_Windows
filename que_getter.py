@@ -38,7 +38,6 @@ class QueGetter:
     _cred = pika.PlainCredentials(get_mq_val["MQ_ID"], get_mq_val["MQ_PW"])
     _send_queue = get_mq_val["MQ_OUT_QUEUE"]
     _recv_queue = get_mq_val["MQ_IN_QUEUE"]
-    _sleep_save = get_mq_val["MQ_SLEEP_QUEUE"]
 
     def __init__(self):
         # 키움증권 로딩
