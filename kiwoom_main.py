@@ -164,10 +164,10 @@ class TextKiwoom(QAxWidget):
             value[i] = value[i].split("^")
             value[i][0] = int(value[i][0])
 
+        # else_func.timelog("value : ", value)
+
         screen_no, self._screen_no = else_func.change_screen_no(self._screen_no)
         self.dynamicCall(self.FUNC_REQUEST_JOGUNSIK, screen_no, value[self._jogunsik_index][1], value[self._jogunsik_index][0], 0)
-
-
 
 
     def _receive_realdata(self, code, type, data):
@@ -180,6 +180,8 @@ class TextKiwoom(QAxWidget):
         pass
 
     def _receive_jogunsikdata(self, screen_no, code_list, jogunsik_name, index, cont):
+        # else_func.timelog("Entered 2nd callback")
+        # else_func.timelog(screen_no, code_list, jogunsik_name, index, cont)
         self._received_data.append(str(code_list)[:-1].replace(";", ","))
         self._received = True
         self._jogunsik_value_loop.exit()
@@ -466,8 +468,7 @@ class TextKiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    # test2 = test.get_highest_trade_amount_jusik([5, "15", "101", "1", "1"])
-    test2 = test.program_restart([0, "123"])
-    print("result : ", test2)
+    val = test.get_jogunsik_value([0, "0"])
+    print("result : ", val)
 
     # app.exec_()

@@ -1,6 +1,6 @@
 # 주식거래 화면번호 : 0010 ~ 0020
 # 수익률조회 화면번호 : 0030 ~ 0050
-
+import datetime
 
 
 def change_screen_no(cur_num):      # int로 넘어온다고 가정
@@ -30,3 +30,7 @@ def remove_space(input_: list):
         for data in datas:
             data = data.replace("\t", "").replace(" ", "")
     return input_
+
+def timelog(*args):
+    print(str(datetime.datetime.now()) + "\t", end='')
+    print(*args)
