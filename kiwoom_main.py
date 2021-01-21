@@ -29,7 +29,22 @@ class TextKiwoom(QAxWidget):
     FUNC_GET_JOGUNSIK_STRING = "GetConditionNameList()"
     TRAN_SHOWBALANCE = "opw00004"
     TRAN_GETMINDATA = "opt10080"
+    TRAN_GETDAYDATA = "opt10081"
+    TRAN_GETJISUDAYDATA = "opt20006"
     TRAN_TRADE_AMOUNT = "OPT10023"
+
+    TR_RECEIVE_VALUE = [
+        ["예수금", "주식증거금현금", "수익증권증거금현금", "신용보증금현금", "기타증거금", "미수확보금", "주문가능금액"],      # 0 - getBalance
+        ["체결시간", "현재가", "거래량", "시가", "고가", "저가"], # 1 - getPastMinData
+        ["종목코드", "종목명", "현재가", "급증량"],      # 2 - gethighestraise
+        ["주식구매, _receive_tran으로 받지 않습니다."], # 3 - buy_jusik
+        ["주식판매, _receive_tran으로 받지 않습니다."], # 4 - sell_jusik
+        ["종목코드", "종목명", "보유수량", "매입금액", "평가금액", "손익금액", "손익율", "현재가"],  # 5 - getprofit
+        ["조건식검색, _receive_tran으로 받지 않습니다."],    # 6 - get_jogunsik
+        ["프로그램재시작, _receive_tran으로 받지 않습니다."],   # 7 - program restart
+        ["일자", "현재가", "거래량", "시가", "고가", "저가"], # 8 - get past day data
+        ["일자", "현재가", "거래량", "시가", "고가", "저가"]  # 9 -jisu data
+    ]
 
     # 화면번호 관련
     # 하나로 고정하면 안된다고 한다. 그러니, 함수를 호출해서 1~200 사이의 값을 순회하도록 하자.
@@ -43,7 +58,7 @@ class TextKiwoom(QAxWidget):
         self.OnEventConnect.connect(self._login_handler)
         self.OnReceiveTrData.connect(self._receive_tran)
         self.OnReceiveMsg.connect(self._receive_msg)
-        self.OnReceiveRealData.connect(self._receive_realdata)
+        # self.OnReceiveRealData.connect(self._receive_realdata)
         # self.OnReceiveChejanData.connect(self._receive_chejan)
         self.OnReceiveConditionVer.connect(self._receive_condition)
         self.OnReceiveTrCondition.connect(self._receive_jogunsikdata)
@@ -64,11 +79,6 @@ class TextKiwoom(QAxWidget):
         self._trade_timer = QTimer()
         self._trade_timer.setInterval(10000)
         self._trade_timer.timeout.connect(self._trade_loop_end)
-
-        # for get_jogunsik_list
-        # self._jogunsik_list_timer = QTimer()
-        # self._jogunsik_list_timer.setInterval(10000)
-        # self._jogunsik_list_timer.timeout.connect(self._jogunsik_list_loop_end)
 
         # for get_jogunsik_value
         self._jogunsik_value_timer = QTimer()
@@ -112,17 +122,13 @@ class TextKiwoom(QAxWidget):
         
         # 화면번호 변경
         screen_no, self._screen_no = else_func.change_screen_no(self._screen_no)
-        # print("화면번호 변경 완료")
         
         # 함수 호출
         self.dynamicCall(self.FUNC_REQUEST_COMM_DATA, user_define_name, trans_name, continue_val, screen_no)
-        # print("Request complete, now proceed")
-        
+
         # 이벤트루프 설정 (signal wait과 비슷) 및 Timeout 설정
         self._receive_loop = QEventLoop()
         self._timer.start()
-
-        # print("Reached Here!")
         
         # 이벤트루프 실행
         self._receive_loop.exec_()       # _receive_tran이 데이터를 줄 때까지 대기함 (event loop를 비슷하게 구현)
@@ -133,7 +139,6 @@ class TextKiwoom(QAxWidget):
         # 이벤트루프가 깨진 이후 데이터를 받아옴
         # 정상적으로 값을 받아왔을 때는 값이 들어있고, 아니면 값이 들어있지 않음
         data = self._received_data
-        # print(data)
         self._received_data = []
         self._received = False
 
@@ -195,7 +200,6 @@ class TextKiwoom(QAxWidget):
         print("server msg : " + screen_no + "|" + user_define_name + "|" + trans_name + "|" + server_msg)
         if user_define_name == "주식거래":      # 여기서 에러처리도 가능함
             self._trade_jusik_loop.exit()
-            # print("reachd htere!")
 
     def _receive_tran(self, screen_no, user_define_name, trans_name, record_name, is_continue, u1, u2, u3, u4):
         """
@@ -208,84 +212,16 @@ class TextKiwoom(QAxWidget):
         :param u1 ~ u4: 불필요한 값 (명세에 그렇게 정의되어있음)
         :return: 없음. self.received_data에 값을 넣어주는게 끝
         """
-        # print(user_define_name, trans_name, is_continue)
-        if user_define_name == "예수금상세현황요청":
-            v1 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "예수금")
-            # print("p")
-            v2 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "주식증거금현금")
-            # print("p")
-            v3 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "수익증권증거금현금")
-            # print("p")
-            v4 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "신용보증금현금")
-            # print("p")
-            v5 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "기타증거금")
-            # print("p")
-            v6 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "미수확보금")
-            # print("p")
-            v7 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "주문가능금액")
-
-            # balance = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, 0, "예수금")
-            # print(account_name, balance)
-            self._received_data.append([v1, v2, v3, v4, v5, v6, v7])
-            self._received = True
-        if user_define_name == "수익률요청":
-            # print("in complete")
-            data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
-            self._received_data.append(data_length)
-            for i in range(data_length):
-                code = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목코드")
-                name = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목명")
-                amount = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "보유수량")
-                price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "매입금액")
-                cur_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "평가금액")
-                profit_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "손익금액")
-                percent = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "손익율")
-                sell_price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
-                self._received_data.append([code, name, amount, price, cur_price, profit_price, percent, sell_price])
-            self._received = True
-            # print("out complete")
-        if user_define_name == "주식분봉차트조회요청":
-            data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
-            for i in range(data_length):
-                timestamp = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "체결시간")
-                price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
-                amount = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "거래량")
-                self._received_data.append([timestamp, price, amount])
-            self._received = True
-        if user_define_name == "거래량급증요청":
-            data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
-            for i in range(data_length):
-                code = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목코드")
-                name = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목명")
-                price = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
-                amount = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "급증량")
-                # percent = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "급증률")
-                result_list = [code.replace(" ", ""), name.replace(" ", ""), abs(int(price.replace(" ", ""))), abs(int(price.replace(" ", ""))) * abs(int(amount.replace(" ", "")))]
-                self._received_data.append(result_list)
-            self._received = True
-        if user_define_name == "주식분봉차트조회요청":
-            data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
-            print("len : ", data_length)
-            for i in range(data_length):
-                v1 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "체결시간")
-                v2 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "현재가")
-                v3 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "거래량")
-                v4 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "시가")
-                v5 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "고가")
-                v6 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "저가")
-                v7 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "수정주가구분").strip()
-                v8 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "수정비율").strip()
-                v9 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "대업종구분").strip()
-                v10 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "소업종구분").strip()
-                v11 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "종목정보").strip()
-                v12 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "수정주가이벤트").strip()
-                v13 = self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, "전일종가").strip()
-                # print([v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13])
-                self._received_data.append([v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13])
-            self._received = True
-        if user_define_name == "주식거래":
-            print("주식거래 : ", user_define_name, trans_name, record_name)
-            return
+        data_length = self.dynamicCall(self.FUNC_GET_REPEAD_DATA_LEN, trans_name, user_define_name)
+        data = []
+        user_function_no = int(user_define_name)
+        for i in range(data_length):
+            one_data = []
+            for val_name in self.TR_RECEIVE_VALUE[user_function_no]:
+                one_data.append(self.dynamicCall(self.FUNC_GET_COMM_DATA, trans_name, user_define_name, i, val_name))
+            data.append(one_data)
+        self._received_data = data
+        self._received = True
         self._receive_loop.exit()
 
     def _get_account_num(self):
@@ -319,7 +255,15 @@ class TextKiwoom(QAxWidget):
 
         # print("tran을 서버로 보냅니다.")
 
-        result = self._send_tran("거래량급증요청", self.TRAN_TRADE_AMOUNT, False)
+        result = self._send_tran(str(args[0]), self.TRAN_TRADE_AMOUNT, False)
+        for i in range(len(result)):
+            result[i] = [
+                result[i][0].replace(" ", ""),
+                result[i][1].replace(" ", ""),
+                abs(int(result[i][2].replace(" ", ""))),
+                abs(int(result[i][2].replace(" ", ""))) * abs(int(result[i][3].replace(" ", ""))),
+            ]
+
         return result
 
     @kiwoom_parser.trade_jusik_to_byte
@@ -345,7 +289,7 @@ class TextKiwoom(QAxWidget):
         screen_no, self._screen_no = else_func.change_screen_no(self._screen_no)
 
         result = self.dynamicCall(self.FUNC_TRADE_JUSIK,            # 주식거래 함수 SendOrder()
-                                  ["주식거래",                        # 사용자 구분명
+                                  [str(args[0]),                        # 사용자 구분명
                                    screen_no,                          # 화면번호
                                    self._account_num,               # 계좌번호 10자리
                                    int(order_type),                 # 주문유형
@@ -383,7 +327,7 @@ class TextKiwoom(QAxWidget):
 
         # print("set input value complete, will proceed")
 
-        result = self._send_tran("예수금상세현황요청", self.TRAN_SHOWBALANCE, False)
+        result = self._send_tran(str(args[0]), self.TRAN_SHOWBALANCE, False)
         # print("final result is : ", result)
         # print("result :", result)
         # 여기서 에러가 날 경우 (비밀번호 확인 관련) -> 위젯에서 계좌비밀번호 저장 눌러서 저장할 것
@@ -401,7 +345,7 @@ class TextKiwoom(QAxWidget):
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "상장폐지조회구분", "0")  # 상장폐지 조회 구분 포함시 "0", 아닐시 "1"
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "비밀번호입력매체구분", "00")
 
-        result = self._send_tran("수익률요청", self.TRAN_SHOWBALANCE, False)
+        result = self._send_tran(str(args[0]), self.TRAN_SHOWBALANCE, False)
         return result
         # print(result)
 
@@ -409,7 +353,7 @@ class TextKiwoom(QAxWidget):
     def get_highest_jusik_data(self, num=200):
         pass
 
-    @kiwoom_parser.get_min_past_data_to_byte
+    @kiwoom_parser.get_past_data_to_byte
     def get_min_past_data(self, args: list):#code, is_continue="0"):
         """
         요청한 주식 정보를 되돌려주는 함수
@@ -422,10 +366,45 @@ class TextKiwoom(QAxWidget):
         is_continue = args[2]
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "종목코드", code)
         self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "틱범위", "1")
-        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "수정주가구분", "0")
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "수정주가구분", "1")
         cont = False if is_continue == "0" else True
 
-        result = self._send_tran("주식분봉차트조회요청", self.TRAN_GETMINDATA, cont)
+        result = self._send_tran(str(args[0]), self.TRAN_GETMINDATA, cont)
+        return result
+
+    @kiwoom_parser.get_past_data_to_byte
+    def get_day_past_data(self, args: list):
+        """
+        요청한 주식의 일봉 데이터를 돌려주는 함수
+        :param args: [함수번호, 종목코드, 기준일자, 연속조회구분]
+        :return: 해당 주식 값
+        """
+        code = args[1]
+        date = args[2]  # YYYYMMDD 형식이어야 함
+        is_cont = False if args[3] == "0" else True
+
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "종목코드", code)
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "기준일자", date)
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "수정주가구분", "1")
+
+        result = self._send_tran(str(args[0]), self.TRAN_GETDAYDATA, is_cont)
+        return result
+
+    @kiwoom_parser.get_past_data_to_byte
+    def get_jisu_day_past_data(self, args: list):
+        """
+        코스피 혹은 코스닥의 과거 데이터를 가져오는 함수
+        :param args: [함수번호, 업종코드, 기준일자, 연속조회구분]
+        :return:
+        """
+        code = args[1]
+        date = args[2]
+        is_cont = False if args[3] == "0" else True
+
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "업종코드", code)
+        self.dynamicCall(self.FUNC_SET_INPUT_VALUE, "기준일자", date)
+
+        result = self._send_tran(str(args[0]), self.TRAN_GETJISUDAYDATA, is_cont)
         return result
 
     @kiwoom_parser.program_restart_to_byte
@@ -466,9 +445,11 @@ class TextKiwoom(QAxWidget):
 
 # 함수 실험하는 공간
 if __name__ == "__main__":
+
     app = QApplication(sys.argv)
     test = TextKiwoom()
-    val = test.get_jogunsik_value([0, "0"])
+    val = test.get_day_past_data([8, "001200", "20210120", "0"])
+    # else_func.list_printer(val)
     print("result : ", val)
 
     # app.exec_()

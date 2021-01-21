@@ -8,8 +8,6 @@ import kiwoom_main
 import else_func
 
 _PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
-_WAIT_TIME = 3.6
-
 
 def GET_MQ_VALUE():
     return_val = {}
@@ -50,7 +48,9 @@ class QueGetter:
             self._kiwoom.trade_jusik,
             self._kiwoom.get_profit,
             self._kiwoom.get_jogunsik_value,
-            self._kiwoom.program_restart
+            self._kiwoom.program_restart,
+            self._kiwoom.get_day_past_data,
+            self._kiwoom.get_jisu_day_past_data
         ]
 
         self.conn = pika.BlockingConnection(pika.ConnectionParameters(self._url, int(self._port), self._vhost, self._cred))
@@ -64,20 +64,6 @@ class QueGetter:
             auto_ack=True
         )
         channel.start_consuming()
-
-
-    def _timechecker(self):
-        # 3.6초 시간 이상이면 통과, 아니면 해당 시간만큼 sleep후 진행
-        self._time2 = self._time1
-        self._time1 = datetime.datetime.now()
-        diff = self._time1 - self._time2
-        elapsed_time = diff.seconds + (diff.microseconds/1000000)
-
-        if elapsed_time >= _WAIT_TIME:
-            pass
-        else:
-            time.sleep(_WAIT_TIME - elapsed_time)
-            self._time1 = datetime.datetime.now()
 
     def kiwoom_interact(self, func_value):
 
@@ -98,9 +84,13 @@ class QueGetter:
         channel.basic_publish(exchange='', routing_key=send_queue, body=final_result)
 
         # 만약 프로그램이 종료되어야 할 때
-        if kiwoom_result[0] == 33:
-            print(kiwoom_result[1:].decode() + "초 만큼 쉽니다.")
-            time.sleep(int(kiwoom_result[1:].decode()))
+        try:
+            if kiwoom_result[0] == 33:
+                print(kiwoom_result[1:].decode() + "초 만큼 쉽니다.")
+                time.sleep(int(kiwoom_result[1:].decode()))
+                exit(1)
+        except IndexError:
+            else_func.timelog("문제 발생! : ", kiwoom_result)
             exit(1)
 
 
