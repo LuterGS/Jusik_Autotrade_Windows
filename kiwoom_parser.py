@@ -106,3 +106,12 @@ def program_restart_to_byte(func):
         value = func(*args)
         return b'!' + else_func.string_to_byte(value)
     return wrapper
+
+
+def korean_name_to_byte(func):
+    def wrapper(*args):
+        value = func(*args)
+        result = b''
+        result += else_func.string_to_byte(value)
+        return result
+    return wrapper

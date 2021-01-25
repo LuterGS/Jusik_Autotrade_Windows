@@ -50,7 +50,8 @@ class QueGetter:
             self._kiwoom.get_jogunsik_value,
             self._kiwoom.program_restart,
             self._kiwoom.get_day_past_data,
-            self._kiwoom.get_jisu_day_past_data
+            self._kiwoom.get_jisu_day_past_data,
+            self._kiwoom.get_korean_name
         ]
 
         self.conn = pika.BlockingConnection(pika.ConnectionParameters(self._url, int(self._port), self._vhost, self._cred))

@@ -440,6 +440,18 @@ class TextKiwoom(QAxWidget):
 
         return data
 
+    @kiwoom_parser.korean_name_to_byte
+    def get_korean_name(self, args: list):
+        """
+        종목명의 한국이름 return하는 함수, [함수번호, 종목코드] 로 넘어옴
+        :param args:
+        :return:
+        """
+        code = args[1]
+        result = self.dynamicCall(self.FUNC_GET_KOREAN_NAME, code)
+
+        return result
+
 
 
 
